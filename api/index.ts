@@ -35,6 +35,16 @@ async function bootstrap(): Promise<Express> {
     app.useLogger(app.get(Logger));
     app.use(helmet());
 
+    expressApp.use((req, _res, next) => {
+      if (req.url && req.url.includes('path=')) {
+        const url = new URL(req.url, 'http://placeholder.local');
+        url.searchParams.delete('path');
+        const search = url.searchParams.toString();
+        req.url = url.pathname + (search ? `?${search}` : '');
+      }
+      next();
+    });
+
     const allowList = parseOrigins(process.env.CORS_ORIGIN);
     app.enableCors({
       origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
