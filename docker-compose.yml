@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: gstock-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gstock
+      POSTGRES_PASSWORD: gstock
+      POSTGRES_DB: gstock
+    ports:
+      - "5432:5432"
+    volumes:
+      - gstock_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gstock"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    container_name: gstock-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://gstock:gstock@postgres:5432/gstock
+      DIRECT_DATABASE_URL: postgresql://gstock:gstock@postgres:5432/gstock
+      JWT_SECRET: dev-only-do-not-use-in-prod
+      JWT_TTL: 7d
+      ADMIN_SEED_USER: admin
+      ADMIN_SEED_PASSWORD_HASH: $$2a$$10$$UV21Du8wT84SWG3WVXAJGu1HvG.nIb7Vm8hzGiVIvjsvyz9paBsze
+      ADMIN_SEED_NAME: "Juan M."
+      ADMIN_SEED_EMAIL: admin@gstock.local
+      CORS_ORIGIN: "http://localhost:3000"
+      NODE_ENV: production
+      PORT: 3001
+      LOG_LEVEL: info
+    ports:
+      - "3001:3001"
+
+volumes:
+  gstock_pg_data:
