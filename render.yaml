@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: gstock-api
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && node dist/main.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: LOG_LEVEL
+        value: info
+      - key: JWT_TTL
+        value: 7d
+      - key: ADMIN_SEED_USER
+        sync: false
+      - key: ADMIN_SEED_PASSWORD_HASH
+        sync: false
+      - key: ADMIN_SEED_NAME
+        sync: false
+      - key: ADMIN_SEED_EMAIL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: SWAGGER_USER
+        sync: false
+      - key: SWAGGER_PASSWORD
+        sync: false

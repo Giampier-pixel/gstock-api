@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: gstock
+          POSTGRES_PASSWORD: gstock
+          POSTGRES_DB: gstock_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gstock"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://gstock:gstock@localhost:5432/gstock_test
+      DIRECT_DATABASE_URL: postgresql://gstock:gstock@localhost:5432/gstock_test
+      JWT_SECRET: test-only-secret
+      JWT_TTL: 7d
+      ADMIN_SEED_USER: admin
+      ADMIN_SEED_PASSWORD_HASH: $2a$10$UV21Du8wT84SWG3WVXAJGu1HvG.nIb7Vm8hzGiVIvjsvyz9paBsze
+      ADMIN_SEED_NAME: Admin
+      ADMIN_SEED_EMAIL: admin@gstock.local
+      CORS_ORIGIN: http://localhost:3000
+      NODE_ENV: test
+      PORT: 3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run build
+      - run: npm test -- --runInBand
