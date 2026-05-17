@@ -11,6 +11,7 @@ import { MovementsModule } from './movements/movements.module';
 import { ProvidersModule } from './providers/providers.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ReportsModule } from './reports/reports.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ReportsModule } from './reports/reports.module';
     ProvidersModule,
     DashboardModule,
     ReportsModule,
+    HealthModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
