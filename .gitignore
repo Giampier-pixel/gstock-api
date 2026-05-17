@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+*.tsbuildinfo
+
+# Local-only: planning artifacts and Claude Code state, never pushed to GitHub
+docs/superpowers/
+.claude/
+CLAUDE.md
