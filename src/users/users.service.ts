@@ -20,6 +20,7 @@ const loginUserSelect = {
 const tokenUserSelect = {
   ...authUserSelect,
   updatedAt: true,
+  passwordChangedAt: true,
 } satisfies Prisma.UserSelect;
 
 export type LoginUserRecord = Prisma.UserGetPayload<{ select: typeof loginUserSelect }>;
@@ -56,7 +57,7 @@ export class UsersService {
   async updatePassword(id: string, passwordHash: string): Promise<void> {
     await this.prisma.user.update({
       where: { id },
-      data: { passwordHash },
+      data: { passwordHash, passwordChangedAt: new Date() },
       select: { id: true },
     });
   }
