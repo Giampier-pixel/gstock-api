@@ -34,13 +34,15 @@ describe('AuthService', () => {
     name: 'Admin',
     passwordHash: bcrypt.hashSync('password123', 4),
     role: Role.ADMIN,
+    emailNotifications: true,
+    darkMode: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
   });
 
   it('returns accessToken + user on valid credentials', async () => {
-    usersService.findByUsername.mockResolvedValue(buildUser());
+    usersService.findForLogin.mockResolvedValue(buildUser());
     jwtService.signAsync.mockResolvedValue('signed.jwt.token');
 
     const result = await service.login('admin', 'password123');
@@ -50,12 +52,12 @@ describe('AuthService', () => {
   });
 
   it('throws Unauthorized when user not found', async () => {
-    usersService.findByUsername.mockResolvedValue(null);
+    usersService.findForLogin.mockResolvedValue(null);
     await expect(service.login('nope', 'pw')).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('throws Unauthorized on password mismatch', async () => {
-    usersService.findByUsername.mockResolvedValue(buildUser());
+    usersService.findForLogin.mockResolvedValue(buildUser());
     await expect(service.login('admin', 'wrong')).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });
