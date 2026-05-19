@@ -25,14 +25,16 @@ enum ProductStatus {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  email        String   @unique
-  name         String
-  passwordHash String
-  role         Role     @default(ADMIN)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  username           String   @unique
+  email              String   @unique
+  name               String
+  passwordHash       String
+  role               Role     @default(ADMIN)
+  emailNotifications Boolean  @default(true)
+  darkMode           Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   movements Movement[] @relation("MovementUser")
 
