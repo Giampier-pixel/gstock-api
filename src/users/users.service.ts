@@ -30,8 +30,11 @@ export type TokenUserRecord = Prisma.UserGetPayload<{ select: typeof tokenUserSe
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findForLogin(username: string): Promise<LoginUserRecord | null> {
-    return this.prisma.user.findUnique({ where: { username }, select: loginUserSelect });
+  findForLogin(identifier: string): Promise<LoginUserRecord | null> {
+    return this.prisma.user.findFirst({
+      where: { OR: [{ username: identifier }, { email: identifier }] },
+      select: loginUserSelect,
+    });
   }
 
   findForLoginById(id: string): Promise<LoginUserRecord | null> {
