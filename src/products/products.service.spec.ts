@@ -111,4 +111,22 @@ describe('ProductsService', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('findDistinctCategories', () => {
+    it('returns sorted list of unique categories', async () => {
+      prisma.product.findMany.mockResolvedValue([
+        { category: 'beverages' },
+        { category: 'snacks' },
+      ] as unknown as Product[]);
+
+      const result = await service.findDistinctCategories();
+
+      expect(prisma.product.findMany).toHaveBeenCalledWith({
+        distinct: ['category'],
+        select: { category: true },
+        orderBy: { category: 'asc' },
+      });
+      expect(result).toEqual(['beverages', 'snacks']);
+    });
+  });
 });

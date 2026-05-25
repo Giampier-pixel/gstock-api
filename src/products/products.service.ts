@@ -44,6 +44,15 @@ export class ProductsService {
     return this.prisma.product.findUnique({ where: { sku } });
   }
 
+  async findDistinctCategories(): Promise<string[]> {
+    const rows = await this.prisma.product.findMany({
+      distinct: ['category'],
+      select: { category: true },
+      orderBy: { category: 'asc' },
+    });
+    return rows.map((r) => r.category);
+  }
+
   create(dto: CreateProductDto): Promise<Product> {
     return this.prisma.product.create({
       data: {
