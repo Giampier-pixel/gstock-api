@@ -40,6 +40,19 @@ export class ProductsService {
     return product;
   }
 
+  async findBySku(sku: string): Promise<Product | null> {
+    return this.prisma.product.findUnique({ where: { sku } });
+  }
+
+  async findDistinctCategories(): Promise<string[]> {
+    const rows = await this.prisma.product.findMany({
+      distinct: ['category'],
+      select: { category: true },
+      orderBy: { category: 'asc' },
+    });
+    return rows.map((r) => r.category);
+  }
+
   create(dto: CreateProductDto): Promise<Product> {
     return this.prisma.product.create({
       data: {

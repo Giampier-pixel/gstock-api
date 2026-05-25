@@ -9,10 +9,14 @@ import express, { type Express, type Request, type Response } from 'express';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { AppModule } from '../src/app.module';
 import { ProblemJsonFilter } from '../src/common/filters/problem-json.filter';
+import { createBasicAuthMiddleware } from '../src/common/middleware/basic-auth.middleware';
 
 function parseOrigins(raw: string | undefined): string[] {
   if (!raw) return [];
-  return raw.split(',').map((o) => o.trim()).filter(Boolean);
+  return raw
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
 }
 
 function isAllowedOrigin(origin: string, allowList: string[]): boolean {
@@ -71,19 +75,10 @@ async function bootstrap(): Promise<Express> {
     const swaggerUser = process.env.SWAGGER_USER;
     const swaggerPassword = process.env.SWAGGER_PASSWORD;
     if (process.env.NODE_ENV === 'production' && swaggerUser && swaggerPassword) {
-      expressApp.use('/docs', (req: Request, res: Response, next) => {
-        const auth = req.headers.authorization;
-        if (!auth?.startsWith('Basic ')) {
-          res.setHeader('WWW-Authenticate', 'Basic realm="gstock-api docs"');
-          return res.status(401).send('Authentication required.');
-        }
-        const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
-        if (user !== swaggerUser || pass !== swaggerPassword) {
-          res.setHeader('WWW-Authenticate', 'Basic realm="gstock-api docs"');
-          return res.status(401).send('Invalid credentials.');
-        }
-        next();
-      });
+      expressApp.use(
+        ['/docs', '/docs-json'],
+        createBasicAuthMiddleware(swaggerUser, swaggerPassword),
+      );
     }
 
     const swaggerConfig = new DocumentBuilder()

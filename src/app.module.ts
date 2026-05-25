@@ -4,7 +4,6 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { PrismaModule } from './prisma/prisma.module';
-import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
 import { MovementsModule } from './movements/movements.module';
@@ -12,6 +11,7 @@ import { ProvidersModule } from './providers/providers.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ReportsModule } from './reports/reports.module';
 import { HealthModule } from './health/health.module';
+import { AssistantModule } from './assistant/assistant.module';
 
 @Module({
   imports: [
@@ -31,7 +31,6 @@ import { HealthModule } from './health/health.module';
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     PrismaModule,
-    UsersModule,
     AuthModule,
     ProductsModule,
     MovementsModule,
@@ -39,6 +38,7 @@ import { HealthModule } from './health/health.module';
     DashboardModule,
     ReportsModule,
     HealthModule,
+    AssistantModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

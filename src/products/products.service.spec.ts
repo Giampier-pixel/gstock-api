@@ -96,4 +96,37 @@ describe('ProductsService', () => {
     );
     expect(result.status).toBe(ProductStatus.LOW_STOCK);
   });
+
+  describe('findBySku', () => {
+    it('returns the product when SKU matches', async () => {
+      const p = buildProduct({ sku: 'SKU-XYZ' });
+      prisma.product.findUnique.mockResolvedValue(p);
+      const result = await service.findBySku('SKU-XYZ');
+      expect(result).toEqual(p);
+      expect(prisma.product.findUnique).toHaveBeenCalledWith({ where: { sku: 'SKU-XYZ' } });
+    });
+    it('returns null when no product matches', async () => {
+      prisma.product.findUnique.mockResolvedValue(null);
+      const result = await service.findBySku('NOPE');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findDistinctCategories', () => {
+    it('returns sorted list of unique categories', async () => {
+      prisma.product.findMany.mockResolvedValue([
+        { category: 'beverages' },
+        { category: 'snacks' },
+      ] as unknown as Product[]);
+
+      const result = await service.findDistinctCategories();
+
+      expect(prisma.product.findMany).toHaveBeenCalledWith({
+        distinct: ['category'],
+        select: { category: true },
+        orderBy: { category: 'asc' },
+      });
+      expect(result).toEqual(['beverages', 'snacks']);
+    });
+  });
 });

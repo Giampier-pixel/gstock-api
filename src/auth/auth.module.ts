@@ -7,32 +7,28 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { getJwtSecret, parseJwtExpiresIn } from './jwt.config';
 import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     UsersModule,
-    PassportModule.register({ defaultStrategy: 'jwt' }),
+    PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const secret = config.get<string>('JWT_SECRET');
-        if (!secret) throw new Error('JWT_SECRET is not configured');
-        const expiresIn = config.get<string>('JWT_TTL') ?? '7d';
+        const secret = getJwtSecret(config);
+        const expiresIn = parseJwtExpiresIn(config.get<string>('JWT_TTL'));
         return {
           secret,
-          signOptions: { expiresIn: expiresIn as unknown as number },
+          signOptions: { expiresIn },
         };
       },
     }),
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
-  ],
+  providers: [AuthService, JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }],
   exports: [AuthService],
 })
 export class AuthModule {}

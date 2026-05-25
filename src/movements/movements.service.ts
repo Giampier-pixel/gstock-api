@@ -94,6 +94,35 @@ export class MovementsService {
     });
   }
 
+  async summary(
+    from?: Date,
+    to?: Date,
+  ): Promise<{ in: number; out: number; from?: Date; to?: Date }> {
+    const range: { gte?: Date; lte?: Date } = {};
+    if (from) range.gte = from;
+    if (to) range.lte = to;
+    const where = (type: MovementType): Prisma.MovementWhereInput =>
+      from || to ? { type, createdAt: range } : { type };
+
+    const [inAgg, outAgg] = await Promise.all([
+      this.prisma.movement.aggregate({
+        where: where(MovementType.IN),
+        _sum: { quantity: true },
+      }),
+      this.prisma.movement.aggregate({
+        where: where(MovementType.OUT),
+        _sum: { quantity: true },
+      }),
+    ]);
+
+    return {
+      in: inAgg._sum.quantity ?? 0,
+      out: outAgg._sum.quantity ?? 0,
+      from,
+      to,
+    };
+  }
+
   private computeStatus(
     stock: number,
     minStock: number,
