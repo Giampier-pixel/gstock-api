@@ -96,4 +96,19 @@ describe('ProductsService', () => {
     );
     expect(result.status).toBe(ProductStatus.LOW_STOCK);
   });
+
+  describe('findBySku', () => {
+    it('returns the product when SKU matches', async () => {
+      const p = buildProduct({ sku: 'SKU-XYZ' });
+      prisma.product.findUnique.mockResolvedValue(p);
+      const result = await service.findBySku('SKU-XYZ');
+      expect(result).toEqual(p);
+      expect(prisma.product.findUnique).toHaveBeenCalledWith({ where: { sku: 'SKU-XYZ' } });
+    });
+    it('returns null when no product matches', async () => {
+      prisma.product.findUnique.mockResolvedValue(null);
+      const result = await service.findBySku('NOPE');
+      expect(result).toBeNull();
+    });
+  });
 });

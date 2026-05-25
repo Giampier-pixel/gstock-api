@@ -40,6 +40,10 @@ export class ProductsService {
     return product;
   }
 
+  async findBySku(sku: string): Promise<Product | null> {
+    return this.prisma.product.findUnique({ where: { sku } });
+  }
+
   create(dto: CreateProductDto): Promise<Product> {
     return this.prisma.product.create({
       data: {
