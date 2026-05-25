@@ -19,7 +19,27 @@ interface ProblemDetails {
   code?: string;
 }
 
+interface PrismaProblem {
+  status: HttpStatus;
+  detail: string;
+}
+
 const TYPE_BASE = 'https://gstock.vercel.app/errors';
+
+const PRISMA_PROBLEMS: Record<string, PrismaProblem> = {
+  P2002: {
+    status: HttpStatus.CONFLICT,
+    detail: 'Unique constraint violated.',
+  },
+  P2003: {
+    status: HttpStatus.BAD_REQUEST,
+    detail: 'Related resource constraint violated.',
+  },
+  P2025: {
+    status: HttpStatus.NOT_FOUND,
+    detail: 'Resource not found.',
+  },
+};
 
 @Catch()
 export class ProblemJsonFilter implements ExceptionFilter {
@@ -30,16 +50,16 @@ export class ProblemJsonFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const problem = this.buildProblem(exception, request.url);
+    const problem = this.buildProblem(exception, request.path);
 
     if (problem.status >= 500) {
-      this.logger.error(exception, exception instanceof Error ? exception.stack : undefined);
+      this.logger.error(
+        exception instanceof Error ? exception.message : 'Unhandled exception',
+        exception instanceof Error ? exception.stack : undefined,
+      );
     }
 
-    response
-      .status(problem.status)
-      .type('application/problem+json')
-      .json(problem);
+    response.status(problem.status).type('application/problem+json').json(problem);
   }
 
   private buildProblem(exception: unknown, instance: string): ProblemDetails {
@@ -47,53 +67,38 @@ export class ProblemJsonFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const res = exception.getResponse();
       const title = this.titleFor(status);
+      const type = `${TYPE_BASE}/${this.slug(status)}`;
 
       if (typeof res === 'string') {
-        return { type: `${TYPE_BASE}/${this.slug(status)}`, title, status, detail: res, instance };
+        return { type, title, status, detail: res, instance };
       }
 
-      const body = res as { message?: string | string[]; error?: string };
-      const detail = Array.isArray(body.message) ? body.message.join('; ') : body.message ?? title;
       const problem: ProblemDetails = {
-        type: `${TYPE_BASE}/${this.slug(status)}`,
+        type,
         title,
         status,
-        detail,
+        detail: this.httpDetail(res, title),
         instance,
       };
 
-      if (Array.isArray(body.message)) {
-        problem.errors = { _: body.message };
+      const errors = this.httpErrors(res);
+      if (errors) {
+        problem.errors = errors;
       }
       return problem;
     }
 
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
-      if (exception.code === 'P2002') {
-        return {
-          type: `${TYPE_BASE}/conflict`,
-          title: 'Conflict',
-          status: HttpStatus.CONFLICT,
-          detail: 'Unique constraint violated.',
-          instance,
-          code: exception.code,
-        };
-      }
-      if (exception.code === 'P2025') {
-        return {
-          type: `${TYPE_BASE}/not-found`,
-          title: 'Not Found',
-          status: HttpStatus.NOT_FOUND,
-          detail: 'Resource not found.',
-          instance,
-          code: exception.code,
-        };
-      }
-      return {
-        type: `${TYPE_BASE}/bad-request`,
-        title: 'Bad Request',
+      const known = PRISMA_PROBLEMS[exception.code] ?? {
         status: HttpStatus.BAD_REQUEST,
-        detail: exception.message,
+        detail: 'Database request failed.',
+      };
+      const title = this.titleFor(known.status);
+      return {
+        type: `${TYPE_BASE}/${this.slug(known.status)}`,
+        title,
+        status: known.status,
+        detail: known.detail,
         instance,
         code: exception.code,
       };
@@ -106,6 +111,19 @@ export class ProblemJsonFilter implements ExceptionFilter {
       detail: 'Unexpected error.',
       instance,
     };
+  }
+
+  private httpDetail(response: object, fallback: string): string {
+    const body = response as { message?: unknown; error?: unknown };
+    if (Array.isArray(body.message)) return body.message.join('; ');
+    if (typeof body.message === 'string') return body.message;
+    if (typeof body.error === 'string') return body.error;
+    return fallback;
+  }
+
+  private httpErrors(response: object): Record<string, string[]> | undefined {
+    const body = response as { message?: unknown };
+    return Array.isArray(body.message) ? { _: body.message.map(String) } : undefined;
   }
 
   private titleFor(status: number): string {

@@ -3,9 +3,10 @@ import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { mockDeep, type DeepMockProxy } from 'jest-mock-extended';
 import * as bcrypt from 'bcryptjs';
-import { Role, User } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
+import type { LoginUserRecord } from '../users/users.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -27,7 +28,7 @@ describe('AuthService', () => {
     service = module.get(AuthService);
   });
 
-  const buildUser = (overrides: Partial<User> = {}): User => ({
+  const buildUser = (overrides: Partial<LoginUserRecord> = {}): LoginUserRecord => ({
     id: 'u-1',
     username: 'admin',
     email: 'admin@gstock.local',
@@ -36,8 +37,6 @@ describe('AuthService', () => {
     role: Role.ADMIN,
     emailNotifications: true,
     darkMode: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
     ...overrides,
   });
 
@@ -49,6 +48,7 @@ describe('AuthService', () => {
 
     expect(result.accessToken).toBe('signed.jwt.token');
     expect(result.user).toMatchObject({ id: 'u-1', username: 'admin', role: Role.ADMIN });
+    expect(jwtService.signAsync).toHaveBeenCalledWith({ sub: 'u-1' });
   });
 
   it('throws Unauthorized when user not found', async () => {

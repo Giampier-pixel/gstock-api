@@ -9,6 +9,8 @@ import type { UpdatePreferencesDto } from './dto/update-preferences.dto';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
 import type { JwtPayload } from './strategies/jwt.strategy';
 
+const DUMMY_PASSWORD_HASH = '$2a$10$PghxBwOdqXXFEHpawNwwqOiZjtvHE4vWy2j8esnAkVzJ.3PPLOAHu';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -18,10 +20,10 @@ export class AuthService {
 
   async login(username: string, password: string): Promise<AuthResponseDto> {
     const user = await this.usersService.findForLogin(username);
-    if (!user) throw new UnauthorizedException('Invalid credentials.');
+    const passwordHash = user?.passwordHash ?? DUMMY_PASSWORD_HASH;
 
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) throw new UnauthorizedException('Invalid credentials.');
+    const ok = await bcrypt.compare(password, passwordHash);
+    if (!user || !ok) throw new UnauthorizedException('Invalid credentials.');
 
     const payload: JwtPayload = { sub: user.id };
     const accessToken = await this.jwtService.signAsync(payload);

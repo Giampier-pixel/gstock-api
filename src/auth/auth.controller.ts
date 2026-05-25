@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle, type ThrottlerGetTrackerFunction } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto, AuthUserDto } from './dto/auth-response.dto';
@@ -10,6 +11,12 @@ import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../common/types/authenticated-user';
 
+const getLoginThrottleTracker: ThrottlerGetTrackerFunction = (req) => {
+  const username =
+    typeof req.body?.username === 'string' ? req.body.username.trim().toLowerCase() : 'unknown';
+  return `${req.ip ?? 'unknown'}:${username}`;
+};
+
 @ApiTags('auth')
 @ApiBearerAuth('access-token')
 @Controller('auth')
@@ -17,6 +24,9 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Throttle({
+    default: { limit: 5, ttl: 60_000, blockDuration: 300_000, getTracker: getLoginThrottleTracker },
+  })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate with username + password.' })

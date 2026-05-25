@@ -17,7 +17,7 @@ services:
       - key: LOG_LEVEL
         value: info
       - key: JWT_TTL
-        value: 7d
+        value: 15m
       - key: ADMIN_SEED_USER
         sync: false
       - key: ADMIN_SEED_PASSWORD_HASH

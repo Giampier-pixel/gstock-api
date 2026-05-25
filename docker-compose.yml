@@ -27,8 +27,8 @@ services:
     environment:
       DATABASE_URL: postgresql://gstock:gstock@postgres:5432/gstock
       DIRECT_DATABASE_URL: postgresql://gstock:gstock@postgres:5432/gstock
-      JWT_SECRET: dev-only-do-not-use-in-prod
-      JWT_TTL: 7d
+      JWT_SECRET: ${JWT_SECRET:?Set a strong JWT_SECRET with at least 32 characters}
+      JWT_TTL: ${JWT_TTL:-15m}
       ADMIN_SEED_USER: admin
       ADMIN_SEED_PASSWORD_HASH: $$2a$$10$$UV21Du8wT84SWG3WVXAJGu1HvG.nIb7Vm8hzGiVIvjsvyz9paBsze
       ADMIN_SEED_NAME: "Juan M."

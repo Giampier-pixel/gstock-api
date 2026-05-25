@@ -4,13 +4,16 @@ import { Logger as NestLogger, ValidationPipe, VersioningType } from '@nestjs/co
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
-import type { Request, Response, NextFunction } from 'express';
 import { AppModule } from './app.module';
 import { ProblemJsonFilter } from './common/filters/problem-json.filter';
+import { createBasicAuthMiddleware } from './common/middleware/basic-auth.middleware';
 
 function parseOrigins(raw: string | undefined): string[] {
   if (!raw) return [];
-  return raw.split(',').map((o) => o.trim()).filter(Boolean);
+  return raw
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
 }
 
 function isAllowedOrigin(origin: string, allowList: string[]): boolean {
@@ -53,19 +56,7 @@ async function bootstrap() {
   const protectSwagger = process.env.NODE_ENV === 'production' && swaggerUser && swaggerPassword;
 
   if (protectSwagger) {
-    app.use('/docs', (req: Request, res: Response, next: NextFunction) => {
-      const auth = req.headers.authorization;
-      if (!auth?.startsWith('Basic ')) {
-        res.setHeader('WWW-Authenticate', 'Basic realm="gstock-api docs"');
-        return res.status(401).send('Authentication required.');
-      }
-      const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
-      if (user !== swaggerUser || pass !== swaggerPassword) {
-        res.setHeader('WWW-Authenticate', 'Basic realm="gstock-api docs"');
-        return res.status(401).send('Invalid credentials.');
-      }
-      next();
-    });
+    app.use(['/docs', '/docs-json'], createBasicAuthMiddleware(swaggerUser, swaggerPassword));
   }
 
   const swaggerConfig = new DocumentBuilder()
